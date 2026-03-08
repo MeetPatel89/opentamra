@@ -1,0 +1,83 @@
+---
+description: Ruff linting and formatting conventions aligned with pyproject.toml config
+globs: **/*.py
+alwaysApply: false
+---
+
+# Ruff Linting & Formatting
+
+## Active rule sets
+The project selects `["E", "F", "I", "N", "W", "UP"]`:
+- **E** — pycodestyle errors
+- **F** — pyflakes (unused imports, undefined names)
+- **I** — isort import ordering
+- **N** — pep8-naming
+- **W** — pycodestyle warnings
+- **UP** — pyupgrade (modernize syntax to py311+)
+
+## Line length
+Hard limit is **100 characters** (`line-length = 100`). Break long lines with parenthesised continuation, not backslash:
+```python
+# ✅
+result = await state.sql_connector.execute_read(
+    query=state.validated_sql,
+    limits=QueryLimits(max_rows=1000, timeout_seconds=30),
+)
+
+# ❌
+result = await state.sql_connector.execute_read(query=state.validated_sql, \
+    limits=QueryLimits(max_rows=1000, timeout_seconds=30))
+```
+
+## Import ordering (isort / I rules)
+Three groups separated by blank lines: stdlib → third-party → project:
+```python
+from __future__ import annotations
+
+import asyncio
+from pathlib import Path
+from typing import Any
+
+import polars as pl
+from pydantic import BaseModel, Field
+
+from backend.core.types import JobState
+from backend.pipeline.context import PipelineContext
+```
+Within each group, `from X import Y` follows bare `import X`. Alphabetise within each sub-group.
+
+## Naming (N rules)
+- Modules, functions, variables, method names: `snake_case`
+- Classes: `PascalCase`
+- Constants at module level: `UPPER_SNAKE_CASE`
+- Private/internal names prefixed with `_`:
+```python
+_REGISTRY: dict[str, type] = {}                  # module-level private
+class LocalFileSystemSource(BaseDataSource): ... # PascalCase class
+async def run_pipeline(ctx: PipelineContext): ...# snake_case function
+```
+
+## pyupgrade (UP rules)
+These are enforced automatically — do not introduce patterns that UP would rewrite:
+- Use `X | Y` not `Union[X, Y]`
+- Use `list[str]` not `List[str]`
+- Use `super()` not `super(ClassName, self)`
+- Use f-strings not `"".format()` or `%`-formatting
+- Use `str(uuid4())` not `"{}".format(uuid4())`
+
+## Unused imports
+Ruff F rules flag unused imports. Do not suppress with `# noqa: F401` unless the import is a deliberate re-export. In that case, use `__all__` or the `as` re-export idiom:
+```python
+# ✅ explicit re-export
+from backend.core.types import JobState as JobState
+
+# ❌ silent noqa
+from backend.core.types import JobState  # noqa: F401
+```
+
+## Run commands
+```bash
+uv run ruff check .          # lint
+uv run ruff check . --fix    # auto-fix safe violations
+uv run ruff format .         # format
+```

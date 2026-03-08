@@ -1,0 +1,95 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "opentamra"
+version = "0.1.0"
+description = "TAMRA tax calculation pipeline for life insurance policy data"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "polars>=1.0",
+    "typer>=0.15",
+    "pydantic-settings>=2.0",
+    "aiosqlite>=0.20",
+    "python-multipart>=0.0.18",
+    "tomli>=2.0; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "httpx>=0.27",
+    "ruff>=0.8",
+    "mypy>=1.13",
+]
+excel = [
+    "openpyxl>=3.1",
+]
+
+[project.scripts]
+opentamra = "backend.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["backend"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+
+# Additional strictness flags (redundant with strict=true but explicit)
+warn_unused_configs = true       # Warn about unused [mypy-...] config sections
+warn_redundant_casts = true      # Warn about unnecessary type casts
+warn_unused_ignores = true       # Warn about unnecessary # type: ignore comments
+warn_return_any = true           # Warn if function returns Any
+no_implicit_optional = true      # Reject Optional[T] if not explicitly annotated
+disallow_any_generics = true     # Require type parameters for generic types (Dict -> Dict[str, Any])
+disallow_subclassing_any = true  # Disallow subclassing values of type Any
+disallow_untyped_calls = true    # Disallow calling untyped functions from typed code
+disallow_untyped_defs = true     # Require type annotations for all functions
+disallow_incomplete_defs = true  # Disallow partially annotated functions
+check_untyped_defs = true        # Type check bodies of unannotated functions
+disallow_untyped_decorators = true  # Require decorators to have types
+no_implicit_reexport = true      # Require explicit __all__ or import aliasing for re-exports
+
+# Exclude common non-source directories
+exclude = [
+    "^.venv/",
+    "^venv/",
+    "^build/",
+    "^dist/",
+    "^.pytest_cache/",
+    "^__pycache__/",
+]
+
+# ============================================================================
+# Error Reporting
+# ============================================================================
+show_error_codes = true          # Show error codes like [import-not-found]
+show_column_numbers = true       # Show column numbers in error messages
+pretty = true                    # Use colored output
+color_output = true              # Enable colored terminal output
+error_summary = true             # Show summary of errors at the end
+
+# ============================================================================
+# Performance & Caching
+# ============================================================================
+incremental = true               # Enable incremental type checking (faster subsequent runs)
+cache_dir = ".mypy_cache"        # Cache location (add to .gitignore)
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+asyncio_mode = "auto"
+
+[dependency-groups]
+dev = []

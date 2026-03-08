@@ -1,0 +1,81 @@
+---
+alwaysApply: true
+---
+
+# Autonomous Rule Creation
+
+Create a new rule in .cursor/rules whenever you receive feedback from a user:
+- Extract main point of the feedback
+- Create a new rule that captures this as a reusable instruction
+- Save the new rule with a short, descriptive name
+- Keep rules simple and avoid redundancy
+
+# Cursor Rules Location
+
+How to add new cursor rules to the project
+
+1. Place rule files in the `.cursor/rules/` folder for the scope they are meant to cover:
+    - Project root rules: generic rules that should apply across the whole project
+    - `frontend/.cursor/rules/`: React, JavaScript, and UI-specific rules
+    - `backend/.cursor/rules/`: Python and backend stack-specific rules
+
+2. Follow the naming convention:
+    - Use kebab-case for filenames
+    - Always use .mdc extension
+    - Make names descriptive of the rule's purpose
+	- If necessary, add good description so agent understands what rule is about
+
+3. Directory structure:
+    ```
+    PROJECT_ROOT/
+    ├── .cursor/
+    │   └── rules/
+    │       ├── generic-project-rule.mdc
+    │       └── ...
+    ├── frontend/
+    │   └── .cursor/
+    │       └── rules/
+    │           ├── react-rule.mdc
+    │           └── ...
+    ├── backend/
+    │   └── .cursor/
+    │       └── rules/
+    │           ├── python-rule.mdc
+    │           └── ...
+    └── ...
+    ```
+
+4. Never place rule files:
+    - Directly in the project root without a `.cursor/rules/` folder
+    - In subdirectories outside the relevant `.cursor/rules/` folder
+    - In any other location
+
+5. Cursor rules have the following structure:
+
+````
+---
+description: Short description of the rule's purpose
+globs: optional/path/pattern/**/* 
+alwaysApply: false
+---
+# Rule Title
+
+Main content explaining the rule with markdown formatting.
+
+1. Step-by-step instructions
+2. Code examples
+3. Guidelines
+
+Example:
+```python
+# Good example
+def good_example():
+  # Implementation following guidelines
+
+
+# Bad example
+def bad_example():
+  # Implementation not following guidelines
+
+```
+````

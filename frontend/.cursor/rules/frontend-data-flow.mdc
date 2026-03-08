@@ -1,0 +1,41 @@
+---
+description: Hook and API flow conventions — async state, SSE, and fetch patterns
+alwaysApply: true18
+---
+
+# Frontend Data Flow Conventions
+
+## SSE ownership
+All SSE connection, reconnection, and teardown logic lives in hooks (`useSSE`, `useConversation`). Components only call `send` and `reset`.
+
+```js
+// ✅ — in a hook
+connect(`/api/v1/conversations/${convId}/stream`, handlers)
+
+// ❌ — in a component
+const evtSource = new EventSource(url)
+```
+
+## Functional setState for stream events
+SSE event handlers always use functional `setState` to avoid stale closures:
+```js
+// ✅
+onResult: (data) => {
+  setMessages((prev) => [...prev, { role: 'assistant', content: data.text }])
+}
+
+// ❌
+onResult: (data) => {
+  setMessages([...messages, { role: 'assistant', content: data.text }])
+}
+```
+
+## Loading and thinking state
+- Set `isLoading(true)` / `setThinkingStep(...)` before the API call.
+- Always clear both in `onDone` and in `catch` — never leave the UI stuck in loading state.
+
+## API helpers
+Named exports only in `src/api/`. Each function targets exactly one endpoint. No logic branching or state management inside API helpers.
+
+## Hook return surface
+Expose a minimal, stable API from each hook. `useConversation` exposes `{ messages, isLoading, thinkingStep, send, reset }` — do not add internal state fields to the return object without good reason.

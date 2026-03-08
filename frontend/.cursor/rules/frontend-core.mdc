@@ -1,0 +1,28 @@
+---
+description: Core frontend conventions — file organisation and responsibility boundaries
+alwaysApply: true
+---
+
+# Frontend Architecture Rules
+
+## Directory responsibilities
+- `src/api/` — all `fetch` calls. Never call `fetch` directly from a component or hook.
+- `src/hooks/` — stateful logic, side effects, SSE lifecycle.
+- `src/components/` — rendering only. No direct API calls or SSE wiring.
+- `src/stores/` — shared cross-component state.
+
+## API client pattern
+Every function in `src/api/client.js` must follow:
+```js
+// ✅
+const res = await fetch(url, options)
+if (!res.ok) throw new Error(`HTTP ${res.status}`)
+return res.json()
+
+// ❌ — silent failure, missing check
+const res = await fetch(url, options)
+return res.json()
+```
+
+## Error resilience
+Do not remove the root `ErrorBoundary` wrapping the app. Component-level async errors must surface to user state (not just `console.error`).

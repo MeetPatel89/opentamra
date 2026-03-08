@@ -1,0 +1,23 @@
+[app]
+name = "OpenTAMRA"
+env = "development"
+debug = false
+
+[paths]
+data_dir = "./data"
+input_dir = "./data/input"
+output_dir = "./data/output"
+db_path = "./opentamra.db"
+upload_dir = "./data/uploads"
+
+[server]
+host = "0.0.0.0"
+port = 8000
+cors_origins = ["http://localhost:3000"]
+
+[pipeline]
+max_workers = 2
+default_output_format = "parquet"
+
+[datasource]
+type = "local"

@@ -1,0 +1,13 @@
+policy_id,product_type,issue_date,issue_age,gender,face_amount,smoker_status
+POL001,whole_life,2020-01-15,35,M,500000.00,NS
+POL002,whole_life,2019-06-01,45,F,250000.00,NS
+POL003,universal_life,2021-03-20,30,M,1000000.00,NS
+POL004,universal_life,2018-11-10,55,F,750000.00,NS
+POL005,variable_life,2022-07-05,40,M,300000.00,NS
+POL006,variable_life,2020-09-12,50,F,600000.00,S
+POL007,whole_life,2021-05-01,25,M,400000.00,NS
+POL008,whole_life,2017-08-20,60,F,200000.00,NS
+POL009,universal_life,2019-12-01,35,F,500000.00,NS
+POL010,universal_life,2016-04-15,70,M,150000.00,NS
+POL011,variable_life,2022-02-28,28,F,800000.00,NS
+POL012,whole_life,2018-03-10,45,M,350000.00,NS

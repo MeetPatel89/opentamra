@@ -1,0 +1,29 @@
+---
+description: Core backend architecture constraints — package boundaries, imports, and secrets
+alwaysApply: true
+---
+
+# Backend Architecture Rules
+
+## Package boundaries
+- `core` owns domain types and exceptions. It must NOT import from `api`, `jobs`, or `pipeline`.
+- `pipeline` owns step orchestration and context. It may import from `core` and `datasource`.
+- `api` wires everything together. It may import from `core`, `pipeline`, `jobs`, and `datasource`.
+- `datasource` and `ingest` are standalone; they may import from `core`.
+
+## Import style
+Always use absolute imports rooted at `backend.*`:
+```python
+# ✅
+from backend.core.types import JobState
+from backend.pipeline.context import PipelineContext
+from backend.datasource.base import DataSource
+
+# ❌
+from ..core.types import JobState
+from .context import PipelineContext
+```
+
+## Secrets and PII
+- Never hardcode credentials, tokens, connection strings, or keys — use `get_settings()` or env vars prefixed `OPENTAMRA_`.
+- Never log raw query results, user data, or auth tokens.

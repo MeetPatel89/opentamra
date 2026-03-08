@@ -1,0 +1,49 @@
+---
+description: React component coding conventions for JSX files
+globs: **/*.jsx
+alwaysApply: false
+---
+
+# React Component Conventions
+
+## Component shape
+- Default-export a single PascalCase function component per file.
+- Destructure props inline in the function signature.
+
+```jsx
+// ✅
+export default function ChatMessage({ role, content, isError }) { ... }
+
+// ❌
+export default function ChatMessage(props) {
+  const { role, content } = props
+  ...
+}
+```
+
+## State updates
+Always use the functional updater form when new state depends on previous state:
+```js
+// ✅
+setMessages((prev) => [...prev, newMessage])
+
+// ❌
+setMessages([...messages, newMessage])
+```
+
+## Callbacks
+Wrap event handlers and callbacks in `useCallback`. Include all referenced state/props in the dependency array.
+
+## Inline styles
+Define style constants at the top of the file (not inline in JSX) when reused more than once:
+```jsx
+// ✅
+const containerStyle = { display: 'flex', flexDirection: 'column', gap: 8 }
+return <div style={containerStyle}>
+
+// ❌ (only if reused)
+return <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+```
+
+## Chart and table components
+`ChartRenderer` and `ResultTable` are rendering-only. Do not add data fetching, SSE subscriptions, or API calls to them.

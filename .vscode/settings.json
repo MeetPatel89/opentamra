@@ -1,0 +1,8 @@
+{
+  "mypy-type-checker.args": [
+    "--strict",
+    "--config-file=pyproject.toml"
+  ],
+  "mypy-type-checker.cwd": "${workspaceFolder}",
+  "mypy-type-checker.reportingScope": "workspace"
+}

@@ -1,0 +1,92 @@
+---
+description: Pydantic v2 BaseModel and dataclass conventions for models and state
+globs: **/*.py
+alwaysApply: false
+---
+
+# Pydantic & Dataclass Conventions
+
+## When to use which
+- **Pydantic BaseModel** — for API schemas (`backend/api/schemas/`), settings, anything that crosses a boundary or needs `.model_dump()` / `.model_validate()`.
+- **`@dataclass`** — for internal mutable state (e.g. `PipelineContext`) where validation overhead is unwanted.
+
+## Mutable defaults — Pydantic
+Always use `Field(default_factory=...)`. Bare `[]`, `{}`, or model instances as defaults are bugs:
+```python
+# ✅
+class Message(BaseModel):
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    tags: list[str] = Field(default_factory=list)
+
+# ❌ — Pydantic silently shares the object across instances in some paths
+class Message(BaseModel):
+    metadata: dict[str, Any] = {}
+    tags: list[str] = []
+```
+
+## Mutable defaults — dataclasses
+Same rule, use `field(default_factory=...)`:
+```python
+# ✅
+@dataclass
+class PipelineContext:
+    frames: dict[str, Any] = field(default_factory=dict)
+    diagnostics: list[dict[str, object]] = field(default_factory=list)
+    manifest: list[dict[str, object]] = field(default_factory=list)
+
+# ❌
+@dataclass
+class PipelineContext:
+    frames: dict[str, Any] = {}
+```
+
+## Immutable scalar defaults are fine without Field
+```python
+class LLMConfig(BaseModel):
+    provider: str = "azure_openai"
+    temperature: float = 0.0
+    max_tokens: int = 4096
+```
+
+## Nested model defaults
+When a model field's default is another model instance, use `default_factory`:
+```python
+# ✅
+class GuardrailsConfig(BaseModel):
+    input_gate: GuardrailGateConfig = Field(default_factory=GuardrailGateConfig)
+
+# ❌
+class GuardrailsConfig(BaseModel):
+    input_gate: GuardrailGateConfig = GuardrailGateConfig()
+```
+
+## Enum fields
+Use `str, Enum` base for string enums that serialise cleanly:
+```python
+class GateVerdict(str, Enum):
+    PASS = "pass"
+    WARN = "warn"
+    BLOCK = "block"
+```
+
+## ABC interfaces with ClassVar
+Abstract base classes declare class-level constants with `ClassVar`. Implementations must not shadow them as instance attributes:
+```python
+class BaseStep(ABC):
+    name: ClassVar[str]
+    order: ClassVar[int]
+
+class LoadInputsStep(BaseStep):
+    name = "load_inputs"
+    order = 0
+```
+
+## Serialisation
+Use `.model_dump()` (Pydantic v2), not `.dict()` (v1 legacy):
+```python
+# ✅
+conv["messages"] = [m.model_dump() for m in messages]
+
+# ❌
+conv["messages"] = [m.dict() for m in messages]
+```

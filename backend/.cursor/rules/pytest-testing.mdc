@@ -1,0 +1,79 @@
+---
+description: Pytest conventions for backend test files
+globs: **/tests/**/*.py
+alwaysApply: false
+---
+
+# Pytest Conventions
+
+## Config reference
+From `pyproject.toml`:
+- `asyncio_mode = "auto"` — all async test functions run automatically, no `@pytest.mark.asyncio` needed.
+- `testpaths = ["backend/tests"]`
+
+## Test file placement
+Mirror the source tree inside `backend/tests/`:
+```
+backend/pipeline/engine.py
+backend/tests/test_pipeline/test_engine.py
+
+backend/ingest/reader.py
+backend/tests/test_ingest/test_reader.py
+
+backend/api/routes/health.py
+backend/tests/test_api/test_health.py
+```
+
+## Naming
+- Test files: `test_<module>.py`
+- Test functions: `test_<behavior_under_test>` — describe the scenario, not the method:
+```python
+# ✅
+async def test_intake_blocks_malicious_input(): ...
+async def test_execute_read_returns_truncated_when_over_limit(): ...
+
+# ❌
+async def test_intake_node(): ...
+async def test_execute_read(): ...
+```
+
+## Async tests
+Because `asyncio_mode = "auto"`, just write `async def test_...`. Do not add the `@pytest.mark.asyncio` decorator:
+```python
+# ✅
+async def test_pipeline_runs_to_end():
+    ctx = PipelineContext(job_id="test-1", settings=test_settings, ...)
+    result = await run_pipeline(ctx)
+    assert result.frames["output"] is not None
+
+# ❌ — redundant decorator
+@pytest.mark.asyncio
+async def test_pipeline_runs_to_end(): ...
+```
+
+## Fixtures
+Prefer narrow, explicit fixtures over broad shared state. Put shared fixtures in `conftest.py` at the test root:
+```
+backend/tests/conftest.py            # shared fixtures (client, test_settings, fixtures_dir)
+backend/tests/fixtures/              # test data files (CSV, etc.)
+```
+
+## Mocking external services
+Mock at the boundary interface, not deep internals. Use the ABC/Protocol as the mock spec:
+```python
+# ✅
+mock_ds = MagicMock(spec=DataSource)
+mock_ds.read_frame.return_value = pl.LazyFrame({"col": [1, 2, 3]})
+
+# ❌ — mocking internal file system methods
+mock_path = MagicMock()
+mock_path.open.return_value.__enter__.return_value.read.return_value = "..."
+```
+
+## Run commands
+```bash
+uv run pytest                        # all tests
+uv run pytest backend/tests/test_api # one test directory
+uv run pytest -x                     # stop on first failure
+uv run pytest --cov                  # with coverage
+```

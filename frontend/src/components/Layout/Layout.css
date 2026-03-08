@@ -1,0 +1,42 @@
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 240px;
+  height: 100vh;
+  background: #1a1a2e;
+  color: #fff;
+  padding: 20px 0;
+}
+
+.sidebar-brand {
+  font-size: 1.25rem;
+  font-weight: 700;
+  padding: 0 20px 20px;
+  border-bottom: 1px solid #2a2a4a;
+}
+
+.sidebar-nav {
+  list-style: none;
+  padding: 12px 0;
+}
+
+.sidebar-nav li a {
+  display: block;
+  padding: 10px 20px;
+  color: #b0b0d0;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.sidebar-nav li a:hover,
+.sidebar-nav li a.active {
+  color: #fff;
+  background: #2a2a4a;
+}
+
+.header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e0e0e0;
+}

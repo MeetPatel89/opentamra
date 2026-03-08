@@ -1,0 +1,39 @@
+---
+description: FastAPI route conventions for backend/api
+globs: **/*.py
+alwaysApply: false
+---
+
+# FastAPI Route Conventions
+
+## Always annotate return types
+```python
+# ✅
+async def create_job(...) -> JobStatus:
+async def list_jobs(...) -> list[JobStatus]:
+async def get_job(...) -> JobDetail:
+
+# ❌
+async def create_job(...):
+```
+
+## Use HTTPException for expected failures
+```python
+# ✅
+job = await job_manager.get(job_id)
+if job is None:
+    raise HTTPException(status_code=404, detail="Job not found")
+
+# ❌
+return {"error": "not found"}
+```
+
+## Keep handlers thin
+Route functions should: parse input → call service/dependency → return response.
+Do not embed pipeline logic, database queries, or file I/O inline in the route body.
+
+## Dependency injection
+Wire all services through `Depends()` or the module-level getters (`get_app_settings()`, etc.). Do not instantiate services inside a route function.
+
+## Background tasks
+Use the background worker for long-running pipeline jobs. Do not `await` pipelines inside a request handler.

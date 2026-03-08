@@ -1,0 +1,154 @@
+---
+description: Mypy type-checking and type annotation conventions for all backend Python files
+globs: **/*.py
+alwaysApply: true
+---
+
+# Mypy & Type Annotation Conventions
+
+## Module header
+Every module starts with `from __future__ import annotations` (enables PEP 604 `X | Y` syntax at runtime on 3.11).
+
+## Built-in generics only
+Use PEP 585/604 syntax. Never import `Optional`, `List`, `Dict`, `Tuple`, `Set`, `FrozenSet`, `Type` from `typing`:
+```python
+# Good
+def fetch(ids: list[str]) -> dict[str, Any]: ...
+def find(key: str | None = None) -> tuple[str, int]: ...
+
+# Bad
+from typing import Optional, List, Dict
+def fetch(ids: List[str]) -> Dict[str, Any]: ...
+def find(key: Optional[str] = None) -> Tuple[str, int]: ...
+```
+
+## Still import these from `typing`
+`Any`, `ClassVar`, `Protocol`, `TypeVar`, `Callable`, `Awaitable` — these have no built-in equivalent:
+```python
+from typing import Any, ClassVar, Protocol, TypeVar, Callable, Awaitable
+```
+
+## Union syntax
+Use `X | Y`, not `Union[X, Y]`. Use `X | None`, not `Optional[X]`:
+```python
+# Good
+pool: asyncpg.Pool | None = None
+result: dict[str, Any] | None = None
+
+# Bad
+pool: Optional[asyncpg.Pool] = None
+result: Optional[Dict[str, Any]] = None
+```
+
+## Public function signatures
+Every public or exported function/method must have full parameter and return type annotations:
+```python
+# Good
+async def run_pipeline(
+    ctx: PipelineContext,
+    steps: list[BaseStep] | None = None,
+) -> PipelineContext: ...
+
+# Bad — missing return type
+async def run_pipeline(ctx, steps=None): ...
+```
+
+## Abstract method signatures
+ABC and Protocol methods must fully annotate parameters and return types. This is the contract downstream implementations rely on:
+```python
+class BaseStep(ABC):
+    name: ClassVar[str]
+    order: ClassVar[int]
+
+    @abstractmethod
+    async def execute(self, ctx: PipelineContext) -> PipelineContext: ...
+```
+
+## Protocol classes for callable shapes
+Use `Protocol` (not bare `Callable`) when a callable has named parameters or needs a docstring:
+```python
+# For complex signatures
+class DataSource(Protocol):
+    def list_files(self, path: Path, pattern: str) -> list[Path]: ...
+    def read_frame(self, path: Path) -> pl.LazyFrame: ...
+
+# For simple signatures, Callable is fine
+StepFactory = Callable[[], BaseStep]
+```
+
+## ClassVar for class-level constants
+Class-level constants on ABCs that should not be instance attributes must use `ClassVar`:
+```python
+class BaseStep(ABC):
+    name: ClassVar[str]
+    order: ClassVar[int]
+```
+
+## Avoid `Any` escape hatches
+- Do not type injected dependencies as `Any` in new code. Use the actual ABC/Protocol type or introduce one.
+- If `Any` is truly unavoidable, narrow it as much as possible and add a comment explaining why.
+
+## Type aliases and NewType
+```python
+from typing import NewType, TypeAlias
+
+JSONDict: TypeAlias = dict[str, Any]
+UserId = NewType('UserId', int)
+```
+Prefer `TypedDict`, `dataclass`, or Pydantic models over loose `dict[str, Any]`.
+
+## Generic types
+Always specify type parameters on generic types:
+```python
+# Good
+from collections.abc import Callable
+
+def apply_transformation(
+    data: list[dict[str, Any]],
+    transform: Callable[[dict[str, Any]], dict[str, Any]]
+) -> list[dict[str, Any]]:
+    return [transform(item) for item in data]
+
+# Bad — missing type parameters
+def apply_transformation(data: list, transform: Callable) -> list:
+    return [transform(item) for item in data]
+```
+
+## Running mypy
+```bash
+uvx mypy .                              # all files
+uvx mypy main.py src/                   # specific files
+mypy --no-incremental                   # force full check
+rm -rf .mypy_cache && uvx mypy .        # clear cache on mysterious errors
+```
+
+## Troubleshooting
+1. **Import not found**: `uv add types-requests types-redis` (install stubs)
+2. **Untyped third-party lib**: add a targeted override in `pyproject.toml`:
+   ```toml
+   [[tool.mypy.overrides]]
+   module = "library_name.*"
+   ignore_missing_imports = true
+   ```
+3. **Gradual typing adoption**: start with less strict settings and enable gradually:
+   ```toml
+   [tool.mypy]
+   strict = false
+   disallow_untyped_defs = false
+   ```
+4. **`# type: ignore`**: always include the error code and a TODO:
+   ```python
+   result = legacy_fn()  # type: ignore[no-untyped-call]  # TODO: add types to legacy_fn
+   ```
+
+## IDE Integration (VS Code)
+Add to `.vscode/settings.json`:
+```json
+{
+  "python.linting.mypyEnabled": true,
+  "python.linting.mypyArgs": [
+    "--strict",
+    "--config-file=pyproject.toml"
+  ]
+}
+```

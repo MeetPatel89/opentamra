@@ -1,0 +1,63 @@
+---
+description: Async/await and concurrency patterns for the FastAPI + asyncpg + agent stack
+globs: **/*.py
+alwaysApply: false
+---
+
+# Async & Concurrency Conventions
+
+## Default to async
+All I/O-bound functions (DB, HTTP, LLM calls) must be `async def` and use `await`. Never call blocking I/O from an async context.
+
+## Async database access
+Use `aiosqlite` for SQLite operations. Always use context managers for connections:
+```python
+# ✅
+async with aiosqlite.connect(self._db_path) as db:
+    await db.execute(query, params)
+    await db.commit()
+
+# ❌ — connection never closed on exception
+db = await aiosqlite.connect(self._db_path)
+await db.execute(query, params)
+```
+
+## Fire-and-forget background tasks
+In FastAPI routes, use background workers for long-running pipeline jobs. Do not `await` the pipeline inside the request handler:
+```python
+# ✅
+await worker.submit(job_id, ctx)
+return {"job_id": job_id}
+
+# ❌ — blocks the HTTP response until pipeline completes
+result = await run_pipeline(ctx)
+return {"job_id": job_id}
+```
+
+## Pipeline step functions
+Each step inherits `BaseStep` with `async def execute(self, ctx: PipelineContext) -> PipelineContext`. Steps must:
+1. Accept and return `PipelineContext` (no side-channel returns).
+2. Never spawn sub-tasks or threads — pipeline engine owns orchestration.
+3. Catch domain-specific errors locally; let unexpected exceptions propagate to the engine's boundary handler.
+
+## Exception handling at async boundaries
+The outermost `try/except` in the pipeline engine and middleware catches `Exception` and updates job state. Inner code should catch specific exceptions:
+```python
+# ✅ inner step code
+except (ValueError, pl.exceptions.PolarsError):
+    ctx.diagnostics.append({"step": self.name, "error": str(e)})
+
+# ✅ boundary (engine)
+except Exception as exc:
+    await job_store.update(job_id, status=JobState.FAILED, error=str(exc))
+```
+
+## structlog logging
+Use `get_logger(__name__)` — never `print()` or `logging.getLogger()`. Always pass structured kwargs, not formatted strings:
+```python
+# ✅
+logger.error("pipeline_step_failed", error=str(e), step=step.name, job_id=ctx.job_id)
+
+# ❌
+logger.error(f"Step {step.name} failed: {e}")
+```

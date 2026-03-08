@@ -1,0 +1,85 @@
+---
+alwaysApply: true
+---
+
+# Python Package Management Rules (`uv`)
+
+This project uses **`uv`** as the **exclusive** tool for managing Python environments and dependencies.
+
+These rules apply to all contributors, automated systems, and CI workflows.
+
+---
+
+## 1. General Rules
+
+- ✅ Use **`uv` only** for dependency management and environment syncing.
+- 🚫 Do **not** use `pip`, `pip-tools`, `poetry`, `conda`, or `virtualenv` for installing or updating dependencies.
+- ✅ Always commit:
+  - `pyproject.toml`
+  - `uv.lock`
+- 🚫 Never modify `uv.lock` manually.
+
+---
+
+## 2. Dependency Management Commands
+
+| Action | Command |
+|-------|---------|
+| Add or upgrade a dependency | `uv add <package>` |
+| Add a development-only dependency | `uv add --dev <package>` |
+| Remove a dependency | `uv remove <package>` |
+| Reinstall all deps from lockfile | `uv sync` |
+
+Examples:
+
+```bash
+uv add numpy
+uv add --dev pytest ipykernel
+uv remove numpy
+uv sync
+```
+
+## 3. Code Execution
+
+Always execute Python code through `uv` so that the correct environment is used:
+
+```bash
+uv run python script.py
+uv run python -m my_project.module
+```
+
+For scripts with inline metadata (self-contained scripts):
+
+```bash
+uv run script.py
+```
+
+## 4. Inline Script Metadata (Optional but Recommended)
+
+Small, isolated scripts can declare dependencies inline:
+
+```python
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#   "numpy",
+#   "matplotlib",
+# ]
+# ///
+print("Hello from a self-contained script!")
+```
+
+Managing these dependencies:
+
+```bash
+uv add package-name --script script.py
+uv remove package-name --script script.py
+uv sync --script script.py
+```
+
+## 5. CI Workflow (Recommended)
+
+```bash
+uv sync
+uvx mypy .
+```
